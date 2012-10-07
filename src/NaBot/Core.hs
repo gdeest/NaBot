@@ -1,6 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module NaBot.Core
+    (
+     runBot
+    )
 
 where
 
