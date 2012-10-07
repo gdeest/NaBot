@@ -51,6 +51,7 @@ library
                    NaBot.Core
                    NaBot.Config
                    NaBot.IRCTypes
+                   NaBot.Parser
   
   -- Modules included in this library but not exported.
   -- other-modules:       

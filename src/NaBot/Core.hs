@@ -6,6 +6,7 @@ where
 
 import NaBot.Config
 import NaBot.IRCTypes
+import NaBot.Parser
 import Prelude hiding (catch)
 import Control.Exception
 import Control.Monad.State
