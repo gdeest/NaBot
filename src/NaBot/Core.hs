@@ -51,10 +51,11 @@ write s t = do
   liftIO $ hPrintf h "%s %s\r\n" s t
 
 
-writeMessage :: IrcMessage -> BotMonad ()
+writeMessage :: IRCMessage -> BotMonad ()
 writeMessage m = do
   h <- getHandle
-  let str = show m
+  let (IRCMessage _ msg) = m
+  let str = show msg
   liftIO $ do
     printf "> %s\n" str
     hPrintf h "%s\r\n" str
@@ -66,8 +67,10 @@ handleRawMessage s = do
   case m of 
     Left err -> 
         liftIO $ putStrLn $ "COULD NOT PARSE: " ++ s
-    Right (PING t) -> 
-        writeMessage $ PONG t
+    Right (IRCMessage _ m) ->
+        case m of
+          (PING t) -> writeMessage $ IRCMessage Nothing $ PONG t
+          _        -> return ()
 
 handshake :: BotMonad ()
 handshake = do
