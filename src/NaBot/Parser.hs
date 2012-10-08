@@ -1,7 +1,7 @@
 module NaBot.Parser
-    (
-     parseIrcMessage
-    )
+    -- (
+    --  parseIrcMessage
+    -- )das
 
 where
 
@@ -13,13 +13,19 @@ import Control.Applicative ((<$>), (<*>), (<*), (*>), (<$))
 parseIrcMessage :: String -> Either ParseError IRCMessage
 parseIrcMessage = parse messageParser ""
 
-messageParser = IRCMessage <$> optionMaybe prefix <* space <*> body
+messageParser = IRCMessage <$> optionMaybe prefix <*> body
 
-prefix = try userPrefix <|> serverPrefix
+prefix = do
+  result <- try userPrefix <|> try serverPrefix
+  space
+  return result
+
+userPrefix   = mkUserPrefix <$ (char ':') <*> nick <* (char '!') <*> user <* (char '@') <*> host
     where
-      userPrefix   = mkUserPrefix <$ (char ':') <*> nick <* (char '!') <*> user <* (char '@') <*> host
-      serverPrefix = ServerPrefix <$ char ':' <*> (fmap concat host)
       mkUserPrefix n u h = UserPrefix (Nick n) (User u) (Hostname h)
+
+serverPrefix = ServerPrefix <$ char ':' <*> (fmap concat host)
+     
 
 nick = (special <|> letter) >> many1 (special <|> alphaNum <|> char '-')
     where 
@@ -34,7 +40,14 @@ shortname = do
   rst <- do many1 (letter <|> digit <|> char '-')
   return $ fst:rst
 
-body = pingParser
+body = try pingParser <|>
+       try noticeParser <|>
+       try welcomeParser
 
 pingParser = PING <$ string "PING :" <*> (PingToken <$> many1 nospcrlfcl)
+twoParams cons s = cons <$ string (s++ " ") <*> many1 nospcrlfcl <* string " :" <*> many anyChar
+
+noticeParser  = twoParams NOTICE      "NOTICE"
+welcomeParser = twoParams RPL_WELCOME "001"
+
 nospcrlfcl = noneOf "\0\n\r :"

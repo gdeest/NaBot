@@ -29,14 +29,24 @@ newtype PingToken = PingToken {unToken :: String}
 data IRCMessage = IRCMessage { messagePrefix :: Maybe Prefix
                              , messageBody   :: MessageBody
                              }
+                deriving (Eq, Show)
 
 data Prefix = ServerPrefix String
             | UserPrefix Nick User Host
+              deriving (Eq)
 
 data Host = Hostname [String]
+          deriving (Eq, Show)
 
 data MessageBody = PING PingToken
                  | PONG PingToken
+                 | NOTICE { noticeTarget :: String
+                          , noticeText   :: String
+                          }
+                 | RPL_WELCOME { nickname :: String
+                               , comment :: String
+                               }
+                   deriving (Eq)
 
 instance Show Prefix where
     show prefix = case prefix of
@@ -51,3 +61,4 @@ instance Show Prefix where
 instance Show MessageBody where
     show (PING (PingToken t)) = "PING :"++t
     show (PONG (PingToken t)) = "PONG " ++t
+    show (RPL_WELCOME nickname comment) = "001 "++nickname++" :"++comment
