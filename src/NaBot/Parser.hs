@@ -1,7 +1,7 @@
 module NaBot.Parser
-    (
-     parseIrcMessage
-    )
+    -- (
+    --  parseIrcMessage
+    -- )
 
 where
 
@@ -46,10 +46,11 @@ srvPrefix = ServerPrefix <$> fmap (concat . intersperse ".") host
 command = many1 letter <|> count 3 digit
 
 -- Arguments
-args = many $ do { space; x <- arg; return x }
+args = manyTill (do { space; x <- arg; return x }) end
     where
       arg = middle <|> trailing
-      middle = ((:[]) <$> nospcrlfcl) >> many (col <|> nospcrlfcl)
+      end = try $ eof <|> (char '\r' >> (return ()))
+      middle = (++) <$> ((:[]) <$> nospcrlfcl) <*> many (col <|> nospcrlfcl)
       trailing = id <$ col <*> many (space <|> nospcrlfcl <|> col)
 
 -- Components
@@ -57,11 +58,8 @@ user = many1 $ noneOf "\0\n\r @"
 nick = (:) <$> (special <|> letter) <*> many1 (special <|> alphaNum <|> char '-')
 
 host = hostname
-hostname = shortname `sepBy1` (string ".")
-shortname = do
-  fst <- (letter <|> digit) 
-  rst <- do many1 (letter <|> digit <|> char '-')
-  return $ fst:rst
+hostname = shortname `sepBy1` (char '.')
+shortname = many (noneOf " .")
 
 -- Helpers / Char sets
 special = oneOf "[]\\`_^{|}"

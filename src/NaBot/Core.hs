@@ -65,8 +65,9 @@ handleRawMessage s = do
   liftIO $ putStrLn s
   let m = parseIrcMessage s
   case m of 
-    Left err -> 
+    Left err -> do
         liftIO $ putStrLn $ "COULD NOT PARSE: " ++ s
+        liftIO $ putStrLn $ "BYTES: " ++ (show $ map (\c -> (c, fromEnum c)) s)
     Right (IRCMessage _ m) ->
         case m of
           (PING t) -> writeMessage $ IRCMessage Nothing $ PONG t
@@ -76,7 +77,7 @@ handshake :: BotMonad ()
 handshake = do
   nick <- getConfig >>= return . unNick . botNick
   write "NICK" nick
-  write "USER" (nick++" 0 * :tutorial bot")
+  write "USER" (nick++" 0 * :NaBot IRC Bot")
 
 mainLoop :: BotMonad ()
 mainLoop = forever $ do
