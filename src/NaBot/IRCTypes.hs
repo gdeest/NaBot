@@ -35,7 +35,7 @@ data Prefix = ServerPrefix String
             | UserPrefix Nick User Host
               deriving (Eq)
 
-data Host = Hostname [String]
+data Host = Hostname {hostParts :: [String]}
           deriving (Eq, Show)
 
 data MessageBody = PING PingToken
@@ -52,14 +52,11 @@ data MessageBody = PING PingToken
                    deriving (Eq)
 
 instance Show Prefix where
-    show prefix = case prefix of
-                    ServerPrefix s -> s
-                    UserPrefix n u h ->
-                        (unNick n) ++ "!" ++ (unUser u) ++ "@" ++ h'
-                            where h' = 
-                                      case h of
-                                        Hostname hs ->
-                                            concat $ intersperse "." hs
+    show (ServerPrefix s)   = s
+    show (UserPrefix n u h) =
+        unNick n ++ "!" ++ unUser u ++ "@" ++ h'
+        where
+          h' = concat $ intersperse "." $ hostParts h
 
 instance Show MessageBody where
     show (PING (PingToken t)) = "PING :"++t
