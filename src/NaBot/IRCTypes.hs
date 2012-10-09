@@ -63,9 +63,9 @@ instance Show Prefix where
           h' = concat $ intersperse "." $ hostParts h
 
 instance Show MessageBody where
-    show (PING (PingToken t)) = "PING :"++t
-    show (PONG (PingToken t)) = "PONG " ++t
-    show (RPL_WELCOME n comment) = "001 "++(unNick n)++" :"++comment
-    show (JOIN chan Nothing) = "JOIN "++(unChan chan)
-    show (JOIN chan (Just pwd)) = "JOIN "++(unChan chan)++":"++pwd
+    show (PING (PingToken t))      = "PING :"++t
+    show (PONG (PingToken t))      = "PONG " ++t
+    show (RPL_WELCOME n comment)   = "001 "++(unNick n)++" :"++comment
+    show (JOIN chan Nothing)       = "JOIN "++(unChan chan)
+    show (JOIN chan (Just pwd))    = "JOIN "++(unChan chan)++":"++pwd
     show (GenericMessage cmd args) = "GenericMessage: "++cmd++" "++ (show args)
