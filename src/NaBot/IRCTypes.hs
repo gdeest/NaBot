@@ -40,15 +40,19 @@ data Host = Hostname {hostParts :: [String]}
 
 data MessageBody = PING PingToken
                  | PONG PingToken
-                 | NOTICE { noticeTarget :: String
-                          , noticeText   :: String
-                          }
-                 | RPL_WELCOME { nickname :: String
-                               , comment :: String
-                               }
-                 | GenericMessage { msgCommand :: String
-                                  , msgArgs :: [String]
-                                  }
+                 | NOTICE 
+                   { noticeTarget :: String
+                   , noticeText   :: String
+                   }
+                 | RPL_WELCOME
+                   { nickname :: String
+                   , comment :: String
+                   }
+                 | JOIN String (Maybe String)
+                 | GenericMessage
+                   { msgCommand :: String
+                   , msgArgs :: [String]
+                   }
                    deriving (Eq)
 
 instance Show Prefix where
@@ -62,4 +66,6 @@ instance Show MessageBody where
     show (PING (PingToken t)) = "PING :"++t
     show (PONG (PingToken t)) = "PONG " ++t
     show (RPL_WELCOME nickname comment) = "001 "++nickname++" :"++comment
+    show (JOIN chan Nothing) = "JOIN "++chan
+    show (JOIN chan (Just pwd)) = "JOIN "++chan++":"++pwd
     show (GenericMessage cmd args) = "GenericMessage: "++cmd++" "++ (show args)

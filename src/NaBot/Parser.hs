@@ -16,11 +16,13 @@ parseIrcMessage = parse (fmap decode msg) ""
 decode (p, cmd, args) = 
     IRCMessage p $ 
                case (cmd, args) of
-                 ("PING", [token]) -> PING $ PingToken token
-                 ("PONG", [token]) -> PONG $ PingToken token
+                 ("PING", [token])          -> PING $ PingToken token
+                 ("PONG", [token])          -> PONG $ PingToken token
                  ("NOTICE", [target, text]) -> NOTICE target text
-                 ("001", [nick, comment]) -> RPL_WELCOME nick comment
-                 (cmd, args) -> GenericMessage cmd args
+                 ("001", [nick, comment])   -> RPL_WELCOME nick comment
+                 ("JOIN", [chan])           -> JOIN chan Nothing
+                 ("JOIN", [chan, pwd])      -> JOIN chan $ Just pwd
+                 (cmd, args)                -> GenericMessage cmd args
 
 msg = (,,) <$> optionMaybe prefix <*> command <*> args
 

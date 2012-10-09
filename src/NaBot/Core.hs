@@ -29,7 +29,7 @@ data BotState = BotState { currentChans :: S.Set Chan
                          }
 
 newtype GBotMonad m a = BotMonad { unBotMonad :: ReaderT BotData (StateT BotState m) a }
-    deriving (Monad, MonadIO)
+    deriving (Functor, Monad, MonadIO)
 
 type BotMonad a = GBotMonad IO a
 
@@ -44,6 +44,12 @@ getHandle = liftM botHandle (BotMonad ask)
 
 getConfig :: BotMonad BotConfig
 getConfig = liftM botConfig (BotMonad ask)
+
+getState :: BotMonad BotState
+getState = BotMonad (lift get)
+
+setState :: BotState -> BotMonad ()
+setState st = BotMonad (lift $ put st)
 
 write :: String -> String -> BotMonad ()
 write s t = do
@@ -60,6 +66,15 @@ writeMessage m = do
     printf "> %s\n" str
     hPrintf h "%s\r\n" str
 
+setCurrentNick :: Nick -> BotMonad ()
+setCurrentNick nick = do
+  curr <- getState
+  setState $ curr { currentNick = nick }
+  
+
+joinChan :: Chan -> BotMonad ()
+joinChan chan = writeMessage (IRCMessage Nothing $ JOIN (unChan chan) Nothing)
+
 handleRawMessage :: String -> BotMonad ()
 handleRawMessage s = do
   liftIO $ putStrLn s
@@ -71,6 +86,10 @@ handleRawMessage s = do
     Right (IRCMessage _ m) ->
         case m of
           (PING t) -> writeMessage $ IRCMessage Nothing $ PONG t
+          (RPL_WELCOME nick _) -> do
+                       setCurrentNick $ Nick nick
+                       cs <- fmap (S.toList . chans) getConfig
+                       mapM_ joinChan cs
           _        -> return ()
 
 handshake :: BotMonad ()
