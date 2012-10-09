@@ -1,53 +1,69 @@
 module NaBot.Parser
-    -- (
-    --  parseIrcMessage
-    -- )das
+    (
+     parseIrcMessage
+    )
 
 where
 
 import NaBot.IRCTypes
 import Text.Parsec
+import Text.Parsec.String
 import Text.Parsec.Char
+import Data.List (intersperse)
 import Control.Applicative ((<$>), (<*>), (<*), (*>), (<$))
 
-parseIrcMessage :: String -> Either ParseError IRCMessage
-parseIrcMessage = parse messageParser ""
+parseIrcMessage = parse (fmap decode msg) "" 
+decode (p, cmd, args) = 
+    IRCMessage p $ 
+               case (cmd, args) of
+                 ("PING", [token]) -> PING $ PingToken token
+                 ("PONG", [token]) -> PONG $ PingToken token
+                 ("NOTICE", [target, text]) -> NOTICE target text
+                 ("001", [nick, comment]) -> RPL_WELCOME nick comment
+                 (cmd, args) -> GenericMessage cmd args
 
-messageParser = IRCMessage <$> optionMaybe prefix <*> body
+msg = (,,) <$> optionMaybe prefix <*> command <*> args
 
-prefix = do
-  result <- try userPrefix <|> try serverPrefix
+-- Parsing prefixes
+prefix :: Parser Prefix
+prefix = do 
+  char ':' 
+  p <- try usrPrefix <|> srvPrefix
   space
-  return result
+  return p
 
-userPrefix   = mkUserPrefix <$ (char ':') <*> nick <* (char '!') <*> user <* (char '@') <*> host
+-- Parses a prefix of form `nick!user@host'.
+usrPrefix :: Parser Prefix
+usrPrefix = mk <$> nick <* char '!' <*> user <* char '@' <*> host
     where
-      mkUserPrefix n u h = UserPrefix (Nick n) (User u) (Hostname h)
+       mk n u h = UserPrefix (Nick n) (User u) (Hostname h)
 
-serverPrefix = ServerPrefix <$ char ':' <*> (fmap concat host)
-     
+-- Parses a server prefix composed
+srvPrefix :: Parser Prefix
+srvPrefix = ServerPrefix <$> fmap (concat . intersperse ".") host
 
-nick = (special <|> letter) >> many1 (special <|> alphaNum <|> char '-')
-    where 
-      special = oneOf "[]\\`_^{|}"
+-- Commands are composed exclusively of letters, or of 3 digits.
+command = many1 letter <|> count 3 digit
 
+-- Arguments
+args = many $ do { space; x <- arg; return x }
+    where
+      arg = middle <|> trailing
+      middle = ((:[]) <$> nospcrlfcl) >> many (col <|> nospcrlfcl)
+      trailing = id <$ col <*> many (space <|> nospcrlfcl <|> col)
+
+-- Components
 user = many1 $ noneOf "\0\n\r @"
+nick = (:) <$> (special <|> letter) <*> many1 (special <|> alphaNum <|> char '-')
+
 host = hostname
 hostname = shortname `sepBy1` (string ".")
-
 shortname = do
   fst <- (letter <|> digit) 
   rst <- do many1 (letter <|> digit <|> char '-')
   return $ fst:rst
 
-body = try pingParser <|>
-       try noticeParser <|>
-       try welcomeParser
-
-pingParser = PING <$ string "PING :" <*> (PingToken <$> many1 nospcrlfcl)
-twoParams cons s = cons <$ string (s++ " ") <*> many1 nospcrlfcl <* string " :" <*> many anyChar
-
-noticeParser  = twoParams NOTICE      "NOTICE"
-welcomeParser = twoParams RPL_WELCOME "001"
-
+-- Helpers / Char sets
+special = oneOf "[]\\`_^{|}"
 nospcrlfcl = noneOf "\0\n\r :"
+col = char ':'

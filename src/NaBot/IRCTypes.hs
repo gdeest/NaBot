@@ -46,6 +46,9 @@ data MessageBody = PING PingToken
                  | RPL_WELCOME { nickname :: String
                                , comment :: String
                                }
+                 | GenericMessage { msgCommand :: String
+                                  , msgArgs :: [String]
+                                  }
                    deriving (Eq)
 
 instance Show Prefix where
@@ -62,3 +65,4 @@ instance Show MessageBody where
     show (PING (PingToken t)) = "PING :"++t
     show (PONG (PingToken t)) = "PONG " ++t
     show (RPL_WELCOME nickname comment) = "001 "++nickname++" :"++comment
+    show (GenericMessage cmd args) = "GenericMessage: "++cmd++" "++ (show args)
