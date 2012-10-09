@@ -45,10 +45,10 @@ data MessageBody = PING PingToken
                    , noticeText   :: String
                    }
                  | RPL_WELCOME
-                   { nickname :: String
+                   { nickname :: Nick
                    , comment :: String
                    }
-                 | JOIN String (Maybe String)
+                 | JOIN Chan (Maybe String)
                  | GenericMessage
                    { msgCommand :: String
                    , msgArgs :: [String]
@@ -65,7 +65,7 @@ instance Show Prefix where
 instance Show MessageBody where
     show (PING (PingToken t)) = "PING :"++t
     show (PONG (PingToken t)) = "PONG " ++t
-    show (RPL_WELCOME nickname comment) = "001 "++nickname++" :"++comment
-    show (JOIN chan Nothing) = "JOIN "++chan
-    show (JOIN chan (Just pwd)) = "JOIN "++chan++":"++pwd
+    show (RPL_WELCOME n comment) = "001 "++(unNick n)++" :"++comment
+    show (JOIN chan Nothing) = "JOIN "++(unChan chan)
+    show (JOIN chan (Just pwd)) = "JOIN "++(unChan chan)++":"++pwd
     show (GenericMessage cmd args) = "GenericMessage: "++cmd++" "++ (show args)

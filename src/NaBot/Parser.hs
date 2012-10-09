@@ -19,9 +19,9 @@ decode (p, cmd, args) =
                  ("PING", [token])          -> PING $ PingToken token
                  ("PONG", [token])          -> PONG $ PingToken token
                  ("NOTICE", [target, text]) -> NOTICE target text
-                 ("001", [nick, comment])   -> RPL_WELCOME nick comment
-                 ("JOIN", [chan])           -> JOIN chan Nothing
-                 ("JOIN", [chan, pwd])      -> JOIN chan $ Just pwd
+                 ("001", [nick, comment])   -> RPL_WELCOME (Nick nick) comment
+                 ("JOIN", [chan])           -> JOIN (Chan chan) Nothing
+                 ("JOIN", [chan, pwd])      -> JOIN (Chan chan) $ Just pwd
                  (cmd, args)                -> GenericMessage cmd args
 
 msg = (,,) <$> optionMaybe prefix <*> command <*> args

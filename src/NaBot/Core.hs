@@ -73,7 +73,7 @@ setCurrentNick nick = do
   
 
 joinChan :: Chan -> BotMonad ()
-joinChan chan = writeMessage (IRCMessage Nothing $ JOIN (unChan chan) Nothing)
+joinChan chan = writeMessage $ IRCMessage Nothing $ JOIN chan Nothing
 
 handleRawMessage :: String -> BotMonad ()
 handleRawMessage s = do
@@ -87,7 +87,7 @@ handleRawMessage s = do
         case m of
           (PING t) -> writeMessage $ IRCMessage Nothing $ PONG t
           (RPL_WELCOME nick _) -> do
-                       setCurrentNick $ Nick nick
+                       setCurrentNick  nick
                        cs <- fmap (S.toList . chans) getConfig
                        mapM_ joinChan cs
           _        -> return ()
