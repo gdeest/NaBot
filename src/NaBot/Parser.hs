@@ -1,7 +1,7 @@
 module NaBot.Parser
-    -- (
-    --  parseIrcMessage
-    -- )
+    (
+     parseIrcMessage
+    )
 
 where
 

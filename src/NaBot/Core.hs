@@ -66,30 +66,51 @@ writeMessage m = do
     printf "> %s\n" str
     hPrintf h "%s\r\n" str
 
+getCurrentNick :: BotMonad Nick
+getCurrentNick = do
+  fmap currentNick getState
+
 setCurrentNick :: Nick -> BotMonad ()
 setCurrentNick nick = do
   curr <- getState
   setState $ curr { currentNick = nick }
   
-
 joinChan :: Chan -> BotMonad ()
 joinChan chan = writeMessage $ IRCMessage Nothing $ JOIN chan Nothing
+
+addToCurrentChans :: Chan -> BotMonad ()
+addToCurrentChans chan = do
+  curr <- getState
+  let currChans = currentChans curr
+      newChans  = S.insert chan currChans
+  setState $ curr { currentChans = newChans }
 
 handleRawMessage :: String -> BotMonad ()
 handleRawMessage s = do
   liftIO $ putStrLn s
-  let m = parseIrcMessage s
-  case m of 
+  let msg = parseIrcMessage s
+  case msg of 
     Left err -> do
         liftIO $ putStrLn $ "COULD NOT PARSE: " ++ s
         liftIO $ putStrLn $ "BYTES: " ++ (show $ map (\c -> (c, fromEnum c)) s)
-    Right (IRCMessage _ m) ->
-        case m of
+    Right (IRCMessage prefix body) ->
+        case body of
           (PING t) -> writeMessage $ IRCMessage Nothing $ PONG t
           (RPL_WELCOME nick _) -> do
                        setCurrentNick  nick
                        cs <- fmap (S.toList . chans) getConfig
                        mapM_ joinChan cs
+          (JOIN chan Nothing) -> 
+              case prefix of
+                Just (UserPrefix n u h) -> 
+                    do
+                      currNick <- getCurrentNick
+                      if currNick == n
+                        then do
+                          liftIO $ putStrLn $ "Joined chan: " ++ (unChan chan)
+                          addToCurrentChans chan
+                        else return ()
+                _                       -> return ()
           _        -> return ()
 
 handshake :: BotMonad ()
